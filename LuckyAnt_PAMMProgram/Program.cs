@@ -63,7 +63,7 @@ namespace LuckyAnt
             //{
             if (input == "Y" || input == "y" || input == null)
             {                
-                bool upgrade_rank_progress = false;
+                bool upgrade_rank_progress = true;
                 bool sponsor_bonus_progress = true;
                 
 
@@ -78,7 +78,7 @@ namespace LuckyAnt
                 // sponsor bonus progress
                 if (sponsor_bonus_progress == true)
                 {
-                    YtdDate = new DateTime(2024, 6, 20, 8, 0, 0);
+                    //YtdDate = new DateTime(2024, 6, 20, 8, 0, 0);
                     int sponsor_level = 20;
                     double sponsor_pct = ((double) 5)/ 100;
                     proceed_sponsor_bonus(YtdDate, sponsor_level, sponsor_pct);
@@ -87,7 +87,7 @@ namespace LuckyAnt
                 bool retrieve_data_link = true;
                 if(retrieve_data_link == true)
                 {
-                    //await api_url_async(YtdDate);
+                    await api_url_async(YtdDate);
                 }
                 
                 /* 
