@@ -1,27 +1,26 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Admin\\Documents\\0_System\\LuckyAnt -VT\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PammProgram.csproj": {}
+    "C:\\Users\\happy\\Documents\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PammProgram.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Admin\\Documents\\0_System\\LuckyAnt -VT\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PammProgram.csproj": {
+    "C:\\Users\\happy\\Documents\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PammProgram.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Admin\\Documents\\0_System\\LuckyAnt -VT\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PammProgram.csproj",
+        "projectUniqueName": "C:\\Users\\happy\\Documents\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PammProgram.csproj",
         "projectName": "LuckyAnt_PammProgram",
-        "projectPath": "C:\\Users\\Admin\\Documents\\0_System\\LuckyAnt -VT\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PammProgram.csproj",
-        "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Admin\\Documents\\0_System\\LuckyAnt -VT\\LuckyAnt_PAMMProgram_V1\\obj\\",
+        "projectPath": "C:\\Users\\happy\\Documents\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PammProgram.csproj",
+        "packagesPath": "C:\\Users\\happy\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\happy\\Documents\\LuckyAnt_PAMMProgram_V1\\LuckyAnt_PAMMProgram_V1\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\happy\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
-          "https://api.nuget.org/v3/index.json": {},
-          "https://www.nuget.org/packages/MySql.Data/8.0.33#release-body-tab": {}
+          "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
@@ -68,7 +67,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.102/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

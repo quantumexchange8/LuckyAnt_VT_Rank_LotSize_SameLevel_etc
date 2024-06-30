@@ -46,7 +46,7 @@ namespace LuckyAnt
         //private static long lucky_ant_id = 2; // live - 7 
         private static long lucky_ant_id = 7; // live - 7 
         private static long bonus_precent_given = 0;
-        private static long rewards_precent_given = 0;    
+        private static long rewards_precent_given = 0;
 
         static async Task Main()
         {
@@ -62,11 +62,11 @@ namespace LuckyAnt
             //do
             //{
             if (input == "Y" || input == "y" || input == null)
-            {                
-                bool upgrade_rank_progress = true;
-                bool sponsor_bonus_progress = true;
-                
-                bool retrieve_data_apilink = true;
+            {
+                bool upgrade_rank_progress = false;
+                bool sponsor_bonus_progress = false;
+
+                bool retrieve_data_apilink = false;
                 bool calculate_bonus_progress = true;
 
                 // ranking progress
@@ -74,9 +74,9 @@ namespace LuckyAnt
                 {
                     proceed_ranking();
                     proceed_manual_ranking();
-                }            
-                
-                if(sponsor_bonus_progress == true || calculate_bonus_progress == true)
+                }
+
+                if (sponsor_bonus_progress == true || calculate_bonus_progress == true)
                 {
                     bonus_rewards_percent(ref bonus_precent_given, ref rewards_precent_given);
                 }
@@ -86,14 +86,16 @@ namespace LuckyAnt
                 {
                     //YtdDate = new DateTime(2024, 6, 20, 8, 0, 0);
                     int sponsor_level = 20;
-                    double sponsor_pct = ((double) 5)/ 100;
+                    double sponsor_pct = ((double)5) / 100;
                     proceed_sponsor_bonus(YtdDate, sponsor_level, sponsor_pct);
                 }
-                
+
                 // retrieve pamm data via api and insert to trade histories
-                if(retrieve_data_apilink == true) {     
+                if (retrieve_data_apilink == true)
+                {
                     //YtdDate = new DateTime(2024, 6, 25, 8, 0, 0);
-                    await api_url_async(YtdDate);   }
+                    await api_url_async(YtdDate);
+                }
 
                 if (calculate_bonus_progress == true)
                 {
@@ -115,18 +117,20 @@ namespace LuckyAnt
                         {
                             //update_rebate_not_underLA(YTD_start, YTD_end);
                             //update_rebate_if_demofund_or_master(YTD_start, YTD_end);
-                            
+
                             proceed_rebate_calculation(YTD_start, YTD_end);
                             proceed_summary_rebate(currentDate);
-                            //proceed_same_level_rewards_personal(currentDate); //currentDate
-                            //proceed_same_level_rewards_group(currentDate);
+
+                            currentDate = new DateTime(2024, 6, 28, 8, 0, 0);
+                            proceed_same_level_rewards_personal(currentDate); //currentDate
+                            proceed_same_level_rewards_group(currentDate);
                         }
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"An exception occurred: {ex}");
                     }
-                    
+
                     taskStopwatch.Stop();
                     Console.WriteLine("");
                     Console.WriteLine($"Task calculate_bonus_progress completed in {taskStopwatch.Elapsed.TotalSeconds} seconds ({taskStopwatch.Elapsed.TotalMinutes})");
@@ -157,16 +161,16 @@ namespace LuckyAnt
                     string selectQuery = "SELECT id FROM masters where deleted_at is null and type = 'PAMM' and status = 'Active' and signal_status = 1;";
                     MySqlCommand select_cmd = new MySqlCommand(selectQuery, sql_conn);
                     MySqlDataReader reader = select_cmd.ExecuteReader();
-                
+
                     if (reader.HasRows)
                     {
-                        while(reader.Read())
+                        while (reader.Read())
                         {
-                            ulong masterid=reader.GetUInt64(0);
-                            if(masterid > 0) { masterid_List.Add(masterid);   }
+                            ulong masterid = reader.GetUInt64(0);
+                            if (masterid > 0) { masterid_List.Add(masterid); }
                         }
                     }
-                }        
+                }
                 await GetApiResponseAsync_N_insertDB(datetime_day, masterid_List);
             }
             catch (Exception ex)
@@ -175,7 +179,7 @@ namespace LuckyAnt
             }
         }
 
-        private static async Task GetApiResponseAsync_N_insertDB( DateTime datetime_day1, List<ulong> masterid_List) //<ApiResponse>
+        private static async Task GetApiResponseAsync_N_insertDB(DateTime datetime_day1, List<ulong> masterid_List) //<ApiResponse>
         {
             try
             {
@@ -184,7 +188,7 @@ namespace LuckyAnt
                     foreach (var masterid0 in masterid_List)
                     {
                         Console.WriteLine(" ");
-                        ulong master_id0 = (ulong) masterid0;
+                        ulong master_id0 = (ulong)masterid0;
                         Console.WriteLine($"url {$"{ipadd_url}day={datetime_day1.ToString("yyyy-MM-dd")}&id={masterid0}"}");
 
                         string api_url = $"{ipadd_url}day={datetime_day1.ToString("yyyy-MM-dd")}&id={masterid0}";
@@ -196,7 +200,7 @@ namespace LuckyAnt
                         {
                             string responseBody = await response.Content.ReadAsStringAsync();
                             ApiResponse apiResponse = JsonSerializer.Deserialize<ApiResponse>(responseBody);
-                            
+
                             if (apiResponse != null)
                             {
                                 Console.WriteLine($"Day: {apiResponse.Day ?? "null"}");
@@ -206,10 +210,10 @@ namespace LuckyAnt
                                 Console.WriteLine($"Number of Trade: {apiResponse.NumberOfTrade?.ToString() ?? "null"}");
 
                                 string datetime_day = apiResponse.Day ?? default_time.ToString("yyyy-MM-dd");
-                                long master_id =  apiResponse.Id ?? 0;
-                                double master_lot =  apiResponse.Lot ?? 0.0;
-                                double master_pnl =  apiResponse.ProfitAndLoss ?? 0.0;
-                                long master_trades =  apiResponse.NumberOfTrade ?? 0;
+                                long master_id = apiResponse.Id ?? 0;
+                                double master_lot = apiResponse.Lot ?? 0.0;
+                                double master_pnl = apiResponse.ProfitAndLoss ?? 0.0;
+                                long master_trades = apiResponse.NumberOfTrade ?? 0;
 
                                 if (apiResponse.Subscriptions != null)
                                 {
@@ -231,16 +235,16 @@ namespace LuckyAnt
                                             long subs_meta_login = 0;
 
                                             sql_conn.Open(); // Open the connection
-                                            string login_sqlstr =  $"SELECT meta_login FROM subscriptions where deleted_at is null and user_id = {subs_userid} and id = {subs_id};";
+                                            string login_sqlstr = $"SELECT meta_login FROM subscriptions where deleted_at is null and user_id = {subs_userid} and id = {subs_id};";
                                             MySqlCommand select_cmd = new MySqlCommand(login_sqlstr, sql_conn);
                                             object result = select_cmd.ExecuteScalar();
-                                            if (result != null) {   subs_meta_login = Convert.ToInt64(result);  }
+                                            if (result != null) { subs_meta_login = Convert.ToInt64(result); }
 
-                                            if(subs_meta_login > 0)
+                                            if (subs_meta_login > 0)
                                             {
-                                                string sqlstr = $"INSERT INTO trade_histories( master_id, master_lot, master_pnl, master_num_trades, subscription_id, user_id, meta_login,"+
+                                                string sqlstr = $"INSERT INTO trade_histories( master_id, master_lot, master_pnl, master_num_trades, subscription_id, user_id, meta_login," +
                                                                 $"volume, time_close, trade_profit, rebate_status, created_at ) VALUES ( " +
-                                                                $"{master_id}, {master_lot}, Round({master_pnl},4), Round({master_trades},4), {subs_id}, {subs_userid}, {subs_meta_login}, "+
+                                                                $"{master_id}, {master_lot}, Round({master_pnl},4), Round({master_trades},4), {subs_id}, {subs_userid}, {subs_meta_login}, " +
                                                                 $"Round({subs_lot},4), '{datetime_day}', Round({subs_pnl},4), 'Pending', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}'); ";
                                                 //Console.WriteLine($"insert_cmd sqlstr: {sqlstr}");
                                                 MySqlCommand insert_cmd = new MySqlCommand(sqlstr, sql_conn);
@@ -249,16 +253,16 @@ namespace LuckyAnt
                                         }
                                     }
                                 }
-                                else{   Console.WriteLine("Subscriptions: null");   }
+                                else { Console.WriteLine("Subscriptions: null"); }
                             }
-                            else{   Console.WriteLine("ApiResponse is null.");  }
+                            else { Console.WriteLine("ApiResponse is null."); }
                         }
                     }
                 }
             }
-            catch (HttpRequestException httpEx) {   Console.WriteLine($"HTTP Request Exception: {httpEx.Message}"); }
-            catch (TaskCanceledException tcEx)  {   Console.WriteLine($"Request Timed Out: {tcEx.Message}");    }
-            catch (Exception ex)    {   Console.WriteLine($"An exception occurred: {ex}");  }
+            catch (HttpRequestException httpEx) { Console.WriteLine($"HTTP Request Exception: {httpEx.Message}"); }
+            catch (TaskCanceledException tcEx) { Console.WriteLine($"Request Timed Out: {tcEx.Message}"); }
+            catch (Exception ex) { Console.WriteLine($"An exception occurred: {ex}"); }
         }
 
         public class Subscription
@@ -304,18 +308,18 @@ namespace LuckyAnt
                 using (MySqlConnection sql_conn = new MySqlConnection(conn))
                 {
                     sql_conn.Open(); // Open the connection
-                    string sqlstr = $"SELECT id, COALESCE(cumulative_amount, 0) AS cumulative_amount, COALESCE(max_out_amount, 0) AS max_out_amount, subscription_number, meta_login "+
-                                    $"FROM subscriptions where deleted_at is null and status = 'Active' and type = 'PAMM' "+ // 
+                    string sqlstr = $"SELECT id, COALESCE(cumulative_amount, 0) AS cumulative_amount, COALESCE(max_out_amount, 0) AS max_out_amount, subscription_number, meta_login " +
+                                    $"FROM subscriptions where deleted_at is null and status = 'Active' and type = 'PAMM' " + // 
                                     $"and COALESCE(cumulative_amount, 0) < COALESCE(max_out_amount, 0) and user_id = {user_id} ;";
-                    
+
                     //Console.WriteLine($"retrieve_subscription_basedon_userid - sqlstr: {sqlstr} ");  
                     MySqlCommand select_cmd = new MySqlCommand(sqlstr, sql_conn);
                     MySqlDataReader reader = select_cmd.ExecuteReader();
                     while (reader.Read())
                     {   // sub_id, cumulative_amount, max_out_amount, quota, subscription_number, meta_login
                         double quota = reader.GetDouble(2) - reader.GetInt64(1);
-                        object[] subscriptData = { reader.GetInt64(0), reader.GetDouble(1), reader.GetDouble(2), quota, reader.GetString(3), reader.GetInt64(4)}; //, reader.GetDouble(6), reader.GetDouble(7) };
-                        subs_data.Add(subscriptData);    
+                        object[] subscriptData = { reader.GetInt64(0), reader.GetDouble(1), reader.GetDouble(2), quota, reader.GetString(3), reader.GetInt64(4) }; //, reader.GetDouble(6), reader.GetDouble(7) };
+                        subs_data.Add(subscriptData);
                     }
                 }
             }
@@ -325,14 +329,14 @@ namespace LuckyAnt
             }
         }
 
-        private static void retrieve_bonus_e_wallet_data(long user_id, ref long bonus_wallet_id, ref double bonus_wallet_bal, ref long e_wallet_id, ref double e_wallet_bal )
+        private static void retrieve_bonus_e_wallet_data(long user_id, ref long bonus_wallet_id, ref double bonus_wallet_bal, ref long e_wallet_id, ref double e_wallet_bal)
         {
             try
             {
                 using (MySqlConnection sql_conn = new MySqlConnection(conn))
                 {
                     sql_conn.Open(); // Open the connection
-                     
+
                     string bonus_wallet_sqlstr = $"select id, balance from wallets where deleted_at is null and type = 'bonus_wallet' and user_id = {user_id};";
                     //Console.WriteLine($"bonus_wallet_sqlstr: {bonus_wallet_sqlstr}");
                     MySqlCommand bonus_wallet_cmd = new MySqlCommand(bonus_wallet_sqlstr, sql_conn);
@@ -361,7 +365,7 @@ namespace LuckyAnt
                 Console.WriteLine($"An exception occurred: {ex}");
             }
         }
-    
+
         private static void bonus_rewards_percent(ref long bonus_precent, ref long rewards_precent)
         {
             using (MySqlConnection sql_conn = new MySqlConnection(conn))
@@ -390,16 +394,16 @@ namespace LuckyAnt
             }
         }
 
-        private static void insert_to_sponsor_bonus(long upline_id, long upline_meta_login, long upline_subscription_id, 
+        private static void insert_to_sponsor_bonus(long upline_id, long upline_meta_login, long upline_subscription_id,
                                                     long sub_userid, long meta_login, long sub_id, string sub_number,
                                                     double meta_bal, double bonus_pct, double total_bonus, double final_amt, string hier_remarks, long hier_lvl)
         {
             Console.WriteLine($"insert_to_sponsor_bonus ");
-            long  bonus_wallet_id = 0;  double bonus_wallet_oldbal = 0;
-            long  e_wallet_id = 0;      double e_wallet_oldbal = 0;
-            
-            retrieve_bonus_e_wallet_data( upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal );
-            
+            long bonus_wallet_id = 0; double bonus_wallet_oldbal = 0;
+            long e_wallet_id = 0; double e_wallet_oldbal = 0;
+
+            retrieve_bonus_e_wallet_data(upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal);
+
             double bonus_precent_decimal = (double)bonus_precent_given / 100;
             double rewards_precent_decimal = (double)rewards_precent_given / 100;
 
@@ -409,19 +413,19 @@ namespace LuckyAnt
 
             double new_bonus_wallet = bonus_wallet_oldbal + rebate_major;
             double new_e_wallet = e_wallet_oldbal + rebate_minor;
-            
+
             Console.WriteLine($" ");
             using (MySqlConnection sql_conn = new MySqlConnection(conn))
             {
                 sql_conn.Open(); // Open the connection
 
-                 string sqlstr = $"INSERT INTO trade_sponsor_bonus(upline_id, upline_meta_login, upline_subscription_id, "+
-                                 $"subs_user_id, meta_login, subscription_id, subscription_number," +
-                                 $"meta_balance, bonus_percentage, total_bonus, final_bonus, hier_remarks, hier_levels, created_at, updated_at)" +
-                                 $"VALUES ({upline_id}, {upline_meta_login}, {upline_subscription_id}, "+
-                                 $"{sub_userid}, {meta_login}, {sub_id}, '{sub_number}', " +
-                                 $"Round({meta_bal},4), {bonus_pct}, Round({total_bonus},4), Round({final_amt},4), '{hier_remarks}', {hier_lvl}, " +
-                                 $"'{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}');";
+                string sqlstr = $"INSERT INTO trade_sponsor_bonus(upline_id, upline_meta_login, upline_subscription_id, " +
+                                $"subs_user_id, meta_login, subscription_id, subscription_number," +
+                                $"meta_balance, bonus_percentage, total_bonus, final_bonus, hier_remarks, hier_levels, created_at, updated_at)" +
+                                $"VALUES ({upline_id}, {upline_meta_login}, {upline_subscription_id}, " +
+                                $"{sub_userid}, {meta_login}, {sub_id}, '{sub_number}', " +
+                                $"Round({meta_bal},4), {bonus_pct}, Round({total_bonus},4), Round({final_amt},4), '{hier_remarks}', {hier_lvl}, " +
+                                $"'{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}');";
 
                 //Console.WriteLine($"insert_cmd sqlstr: {sqlstr}");
                 MySqlCommand insert_cmd = new MySqlCommand(sqlstr, sql_conn);
@@ -430,16 +434,16 @@ namespace LuckyAnt
 
             //Console.WriteLine($" ");
             string remarks_major = $"SponsorBonus(bonus_wallet) => ${Math.Round(final_amt, 4)} * {bonus_precent_given}% = ${rebate_major}";
-            insert_to_wallet_walletlog_transaction(0, upline_id, upline_subscription_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "SponsorBonus", rebate_major, remarks_major );  
+            insert_to_wallet_walletlog_transaction(0, upline_id, upline_subscription_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "SponsorBonus", rebate_major, remarks_major);
 
             //Console.WriteLine($" ");
-            string remarks_minor = $"SponsorBonus(e_wallet) => ${Math.Round(final_amt, 4)} * {rewards_precent_decimal}% = ${rebate_minor}";    
-            insert_to_wallet_walletlog_transaction(1, upline_id, upline_subscription_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "SponsorBonus", rebate_minor,  remarks_minor );    
-            
+            string remarks_minor = $"SponsorBonus(e_wallet) => ${Math.Round(final_amt, 4)} * {rewards_precent_decimal}% = ${rebate_minor}";
+            insert_to_wallet_walletlog_transaction(1, upline_id, upline_subscription_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "SponsorBonus", rebate_minor, remarks_minor);
+
         }
 
         private static void insert_to_wallet_walletlog_transaction(long type_id, long upline_id, long subs_id, long wallet_id, double wallet_oldbal, double wallet_newbal, string category, string purpose,
-                                                        double bonus_amt, string walletlog_remarks )
+                                                        double bonus_amt, string walletlog_remarks)
         {
             //var taskStopwatch = Stopwatch.StartNew();
             Console.WriteLine($"insert_to_wallet_walletlog ... {type_id}");
@@ -448,7 +452,7 @@ namespace LuckyAnt
                 using (MySqlConnection sql_conn = new MySqlConnection(conn))
                 {
                     sql_conn.Open(); // Open the connection
-                    if(type_id == 0)
+                    if (type_id == 0)
                     {
                         string walletmajor_sqlstr = "INSERT INTO wallet_logs (user_id, wallet_id, old_balance, new_balance, wallet_type, category, purpose, amount, remark, created_at) " +
                                                     $"VALUES ({upline_id}, {wallet_id}, ROUND({wallet_oldbal},4), ROUND({wallet_newbal},4), 'bonus_wallet', '{category}', '{purpose}', " +
@@ -475,17 +479,17 @@ namespace LuckyAnt
                         MySqlCommand b_select_cmd = new MySqlCommand(b_walletlog_id_str, sql_conn);
                         long b_walletlog_id = Convert.ToInt64(b_select_cmd.ExecuteScalar());
 
-                        string major_b_transaction =  $"INSERT INTO transactions (user_id, category, transaction_type, fund_type, to_wallet_id, amount, transaction_amount, new_wallet_amount, status, comment, created_at)"+
+                        string major_b_transaction = $"INSERT INTO transactions (user_id, category, transaction_type, fund_type, to_wallet_id, amount, transaction_amount, new_wallet_amount, status, comment, created_at)" +
                                                     $"VALUES ( {upline_id}, 'wallet', '{purpose}', 'RealFund', {wallet_id}, ROUND({bonus_amt},4), ROUND({bonus_amt},4), ROUND({wallet_newbal},4), " +
                                                     $"'Success', '{b_walletlog_id}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}'); ";
                         Console.WriteLine($"major_b_transaction: {major_b_transaction}");
                         MySqlCommand b_insert_transaction_cmd = new MySqlCommand(major_b_transaction, sql_conn);
                         b_insert_transaction_cmd.ExecuteScalar();
                     }
-                    if(type_id == 1)
+                    if (type_id == 1)
                     {
                         string walletminor_sqlstr = "INSERT INTO wallet_logs (user_id, wallet_id, old_balance, new_balance, wallet_type, category, purpose, amount, remark, created_at) " +
-                                                    $"VALUES ({upline_id}, {wallet_id}, ROUND({wallet_oldbal},4), ROUND({wallet_newbal},4), 'e_wallet', '{category}', '{purpose}', "+
+                                                    $"VALUES ({upline_id}, {wallet_id}, ROUND({wallet_oldbal},4), ROUND({wallet_newbal},4), 'e_wallet', '{category}', '{purpose}', " +
                                                     $"ROUND({bonus_amt},4), '{walletlog_remarks}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' );";
                         Console.WriteLine($"walletminor_sqlstr: {walletminor_sqlstr}");
                         MySqlCommand e_wallet_insert_cmd = new MySqlCommand(walletminor_sqlstr, sql_conn);
@@ -495,7 +499,7 @@ namespace LuckyAnt
                                                     $"where deleted_at is null and user_id = {upline_id} and type = 'e_wallet' and id > 0; ";
                         Console.WriteLine($"walletminor_update: {walletminor_update}");
                         MySqlCommand e_wallet_update_cmd = new MySqlCommand(walletminor_update, sql_conn);
-                        e_wallet_update_cmd.ExecuteScalar();    
+                        e_wallet_update_cmd.ExecuteScalar();
 
                         string max_minor_update = $"update subscriptions set cumulative_amount = ROUND( (COALESCE(cumulative_amount, 0) + {bonus_amt}),4), updated_at = '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' " +
                                                     $"where deleted_at is null and id = {subs_id} and user_id = {upline_id} and id > 0; ";
@@ -509,14 +513,14 @@ namespace LuckyAnt
                         MySqlCommand b_select_cmd = new MySqlCommand(e_walletlog_id_str, sql_conn);
                         long e_walletlog_id = Convert.ToInt64(b_select_cmd.ExecuteScalar());
 
-                        string minor_e_transaction =  $"INSERT INTO transactions (user_id, category, transaction_type, fund_type, to_wallet_id, amount, transaction_amount, new_wallet_amount, status, comment, created_at)"+
+                        string minor_e_transaction = $"INSERT INTO transactions (user_id, category, transaction_type, fund_type, to_wallet_id, amount, transaction_amount, new_wallet_amount, status, comment, created_at)" +
                                                     $"VALUES ( {upline_id}, 'wallet', '{purpose}', 'RealFund', {wallet_id}, ROUND({bonus_amt},4), ROUND({bonus_amt},4), ROUND({wallet_newbal},4), " +
                                                     $"'Success', '{e_walletlog_id}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}'); ";
                         Console.WriteLine($"minor_e_transaction: {minor_e_transaction}");
                         MySqlCommand b_insert_transaction_cmd = new MySqlCommand(minor_e_transaction, sql_conn);
                         b_insert_transaction_cmd.ExecuteScalar();
-                    }   
-                } 
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -527,7 +531,7 @@ namespace LuckyAnt
             Console.WriteLine("");
             Console.WriteLine($"Task sponsor_bonus completed in {taskStopwatch.Elapsed.TotalSeconds} seconds ({taskStopwatch.Elapsed.TotalMinutes})"); */
         }
-        
+
         private static void proceed_sponsor_bonus(DateTime YtdDate, int sponsor_level, double sponsor_pct)
         {
             var taskStopwatch = Stopwatch.StartNew();
@@ -538,9 +542,9 @@ namespace LuckyAnt
                 using (MySqlConnection sql_conn = new MySqlConnection(conn))
                 {
                     sql_conn.Open(); // Open the connection
-                    string sqlstr = $"SELECT user_id, meta_login, meta_balance, DATE(approval_date) as dt_time, id, subscription_number "+ 
-                                    $"FROM subscriptions where deleted_at is null and status = 'Active' and approval_date is not null "+
-                                    $"and type = 'PAMM' and DATE(approval_date) = DATE('{YtdDate.ToString("yyyy-MM-dd")}')  "+ 
+                    string sqlstr = $"SELECT user_id, meta_login, meta_balance, DATE(approval_date) as dt_time, id, subscription_number " +
+                                    $"FROM subscriptions where deleted_at is null and status = 'Active' and approval_date is not null " +
+                                    $"and type = 'PAMM' and DATE(approval_date) = DATE('{YtdDate.ToString("yyyy-MM-dd")}')  " +
                                     $"and id not in (select subscription_id from trade_sponsor_bonus where deleted_at is null) ;";
 
                     //Console.WriteLine($"proceed_sponsor_bonus sqlstr: {sqlstr}");
@@ -548,8 +552,8 @@ namespace LuckyAnt
                     MySqlDataReader reader = select_cmd.ExecuteReader();
                     while (reader.Read())
                     {                               // user_id, meta_login, meta_balance, dt_time
-                        object[] subscriptionData = { reader.GetInt64(0), reader.GetInt64(1), reader.GetDouble(2), reader.GetDateTime(3), reader.GetInt64(4), reader.GetString(5)}; //, reader.GetDouble(6), reader.GetDouble(7) };
-                        new_subscription_List.Add(subscriptionData);    
+                        object[] subscriptionData = { reader.GetInt64(0), reader.GetInt64(1), reader.GetDouble(2), reader.GetDateTime(3), reader.GetInt64(4), reader.GetString(5) }; //, reader.GetDouble(6), reader.GetDouble(7) };
+                        new_subscription_List.Add(subscriptionData);
                     }
                 }
 
@@ -568,7 +572,7 @@ namespace LuckyAnt
 
                     string subs_user_role = "";
                     string subs_hier_list = "";
-                    
+
                     using (MySqlConnection sql_conn = new MySqlConnection(conn))
                     {
                         sql_conn.Open(); // Open the connection
@@ -578,63 +582,65 @@ namespace LuckyAnt
                         MySqlDataReader reader1 = select_cmd.ExecuteReader();
                         while (reader1.Read())
                         {
-                            subs_user_role = reader1.GetString(0);  subs_hier_list = reader1.GetString(1);
+                            subs_user_role = reader1.GetString(0); subs_hier_list = reader1.GetString(1);
                         }
                         reader1.Close();
                     }
 
                     Console.WriteLine($"subs_userid - {subs_userid} | meta_login: {meta_login} | meta_balance: {meta_balance} | subscription_id: {subscription_id} | sponsor_pct: {sponsor_pct} | sponsor_level: {sponsor_level}");
                     /* List<object[]> heir_lvl_List = new List<object[]>(); */
-                    if(subs_user_role.Length > 0 && subs_hier_list.Length > 0 && subs_user_role == "user" && meta_balance > 0)
+                    if (subs_user_role.Length > 0 && subs_hier_list.Length > 0 && subs_user_role == "user" && meta_balance > 0)
                     {
                         int level_count = 0;
                         double level_pct = sponsor_pct / sponsor_level;
                         double level_balance = meta_balance * level_pct;
-                        string[] hierlistSplit = subs_hier_list.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries); 
-                        for (int x = hierlistSplit.Length - 1; ( x >= 0 && level_count < sponsor_level); x--)
+                        string[] hierlistSplit = subs_hier_list.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+                        for (int x = hierlistSplit.Length - 1; (x >= 0 && level_count < sponsor_level); x--)
                         {
-                            if (hierlistSplit[x] != "" )
+                            if (hierlistSplit[x] != "")
                             {
                                 level_count += 1;
 
                                 long.TryParse(hierlistSplit[x], out long upline_id);
-                                long upline_rank = 0; long upline_active = 0; string upline_role=""; 
+                                long upline_rank = 0; long upline_active = 0; string upline_role = "";
                                 retrieve_userid(upline_id, ref upline_rank, ref upline_active, ref upline_role);
-                                    
-                                if(upline_active > 0 && upline_role == "user")
+
+                                if (upline_active > 0 && upline_role == "user")
                                 {
                                     List<object[]> subs_data_list = new List<object[]>();
                                     retrieve_subscription_basedon_userid(upline_id, ref subs_data_list);
 
                                     //Console.WriteLine($"Count: {subs_data_list.Count} -- bal: {level_balance} -- pct: {level_pct} -- (level_count {level_count} <= sponsor_level {sponsor_level})");
-                                    if(subs_data_list.Count > 0)
+                                    if (subs_data_list.Count > 0)
                                     {
                                         // sub_id, cumulative_amount, max_out_amount, quota, subscription_number, meta_login
-                                        double left_bal = level_balance ;
+                                        double left_bal = level_balance;
                                         foreach (var subs_data in subs_data_list)
                                         {
-                                            long upline_meta_login = (long) subs_data[5];
-                                            long upline_sub_id = (long) subs_data[0];
+                                            long upline_meta_login = (long)subs_data[5];
+                                            long upline_sub_id = (long)subs_data[0];
                                             double quota = (double)subs_data[3];
-                                            if(quota > 0 &&  left_bal > 0)
+                                            if (quota > 0 && left_bal > 0)
                                             {
-                                                if(quota >= left_bal) {  
-                                                    insert_to_sponsor_bonus(upline_id, upline_meta_login, upline_sub_id, subs_userid, meta_login, subscription_id,  
+                                                if (quota >= left_bal)
+                                                {
+                                                    insert_to_sponsor_bonus(upline_id, upline_meta_login, upline_sub_id, subs_userid, meta_login, subscription_id,
                                                                             subscription_number, meta_balance, level_pct, level_balance, left_bal, subs_hier_list, level_count);
                                                     left_bal = left_bal - level_balance;    //Console.WriteLine($" >= left_bal : {left_bal}");
                                                 }
-                                                else if (quota < left_bal){
-                                                    insert_to_sponsor_bonus(upline_id, upline_meta_login, upline_sub_id, subs_userid, meta_login, subscription_id,  
+                                                else if (quota < left_bal)
+                                                {
+                                                    insert_to_sponsor_bonus(upline_id, upline_meta_login, upline_sub_id, subs_userid, meta_login, subscription_id,
                                                                             subscription_number, meta_balance, level_pct, level_balance, quota, subs_hier_list, level_count);
                                                     left_bal = left_bal - quota;    //Console.WriteLine($" < left_bal : {left_bal}");
                                                 }
                                             }
                                         }
                                     }
-                                }   
+                                }
                             }
                         }
-                    } 
+                    }
                 }
             }
             catch (Exception ex)
@@ -694,7 +700,7 @@ namespace LuckyAnt
                 Console.WriteLine($"ConnectionString: {sql_conn.ConnectionTimeout}");
             }
         }
-        
+
         private static void proceed_same_level_rewards_personal(DateTime TimeNow)
         {
             var taskStopwatch = Stopwatch.StartNew();
@@ -706,7 +712,7 @@ namespace LuckyAnt
                             $"INNER JOIN setting_ranks t3 ON t3.position = t2.setting_rank_id and t3.deleted_at is null where t1.deleted_at is null and t1.upline_user_id = t1.user_id and t3.rewards_same_lvl > 0 AND t1.rebate > 0 and t1.status = 'Approved' " +
                             $"and DATE(execute_at) = '{TimeNow.ToString("yyyy-MM-dd")}' AND t1.upline_user_id not in (SELECT distinct claimed_frm_user FROM trade_same_level_reward where DATE(rebate_claimed_time) = '{TimeNow.ToString("yyyy-MM-dd")}' and claim_type = 'personal') " +
                             $"group by t1.upline_user_id, t1.upline_subs_id, t3.rewards_same_lvl ";
-            
+
             Console.WriteLine($"proceed_same_level_rewards sqlstr - {sqlstr}");
             using (MySqlConnection sql_conn = new MySqlConnection(conn))
             {
@@ -745,6 +751,7 @@ namespace LuckyAnt
                 long dw_id = (long)s_lvl[0];
                 long dw_subsid = (long)s_lvl[1];
                 long ori_dw = dw_id;
+                long ori_dw_subsid = dw_subsid;
                 long dw_rank = (long)s_lvl[2];
                 double total_lot_rebate = (double)s_lvl[3];
                 double same_lvl_rewards_prct = (double)s_lvl[4];
@@ -752,7 +759,7 @@ namespace LuckyAnt
                 string hierlist = (string)s_lvl[5];
                 //long upline_id = (long)s_lvl[5];
 
-                if( hierlist != null && hierlist.Length > 0 )
+                if (hierlist != null && hierlist.Length > 0)
                 {
                     string[] hierlistSplit = hierlist.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
                     for (int x = hierlistSplit.Length - 1; x >= 0; x--)
@@ -760,86 +767,54 @@ namespace LuckyAnt
                         if (hierlistSplit[x] != "")
                         {
                             long.TryParse(hierlistSplit[x], out long upline_id);
-                            long upline_rank = 0; long upline_active = 0; string upline_role="";
-                            final_rewards = 0;   
+                            long upline_rank = 0; long upline_active = 0; string upline_role = "";
+                            final_rewards = 0;
                             retrieve_userid(upline_id, ref upline_rank, ref upline_active, ref upline_role);
 
                             if (upline_active > 0 && upline_rank > 0 && upline_rank == dw_rank) //&& upline_rank == dw_rank 
                             {
                                 final_rewards = (total_lot_rebate * same_lvl_rewards_prct) / 100;
                                 Console.WriteLine($"{x} - upline_id: {upline_id} - upline_rank: {upline_rank} - upline_active: {upline_active} - total_lot_rebate: {total_lot_rebate} - same_lvl_rewards_prct: {same_lvl_rewards_prct} - final_rewards: {final_rewards}");
-                                
+
                                 if (final_rewards > 0)
                                 {
                                     List<object[]> subs_data_list = new List<object[]>();
                                     retrieve_subscription_basedon_userid(upline_id, ref subs_data_list);
-                                    
-                                    /* if(subs_data_list.Count > 0)
-                                    {
-                                        double left_bal = final_rewards ;
 
+                                    if (subs_data_list.Count > 0)
+                                    {
+                                        double left_bal = final_rewards;
+                                        bool found_n_paid = false;
                                         foreach (var subs_data in subs_data_list)
                                         {
-                                            long upline_meta_login = (long) subs_data[5];
-                                            long upline_sub_id = (long) subs_data[0];
+                                            long upline_meta_login = (long)subs_data[5];
+                                            long upline_sub_id = (long)subs_data[0];
                                             double quota = (double)subs_data[3];
-                                            if(quota > 0 &&  left_bal > 0)
+                                            if (quota > 0 && left_bal > 0)
                                             {
-                                                if(quota > 0 &&  left_bal > 0)
+                                                if (quota > 0 && left_bal > 0 && quota >= left_bal)
                                                 {
-
-                                                insert_update_based_rebate(upline_id, upline_rank, upline_sub_id, upline_meta_login, dw_id, dw_rank, dw_sub_id, subsid, meta_login, 
-                                                           time_close, trade_volume, upline_rebate_perlot, net_rebate_lot, final_amount, quota, left_bal, remarks);
-
-
-                                                long bonus_wallet_id = 0;   double bonus_wallet_oldbal = 0; long e_wallet_id = 0;   double e_wallet_oldbal = 0;
-                                                retrieve_bonus_e_wallet_data( upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal ); 
-                                                double bonus_precent_decimal = (double)bonus_precent_given / 100; double rewards_precent_decimal = (double)rewards_precent_given / 100;
-
-                                                // rebate divide 80% and 20%
-                                                double rebate_major = Math.Round(left_bal * bonus_precent_decimal, 4); // Bonus Wallet
-                                                double rebate_minor = Math.Round(left_bal * rewards_precent_decimal, 4); // E-wallets
-                                                Console.WriteLine($"rebate: {left_bal} - bonus_precent_decimal: {bonus_precent_decimal} - rewards_precent_decimal: {rewards_precent_decimal}");
-
-                                                double new_bonus_wallet = bonus_wallet_oldbal + rebate_major; double new_e_wallet = e_wallet_oldbal + rebate_minor;
-                                                string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(left_bal,4)} * {bonus_precent_given}% = ${Math.Round(rebate_major,4)}";
-                                                string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(left_bal, 4) } * {rewards_precent_given}% = ${Math.Round(rebate_minor,4) }"; 
-                                                insert_to_wallet_walletlog_transaction(0, upline_id, upline_sub_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major );   
-                                                insert_to_wallet_walletlog_transaction(1, upline_id, upline_sub_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor,  remarks_minor );     
-
-                                                left_bal = left_bal - net_rebate_lot;
-
+                                                    insert_to_trade_same_level_reward(dw_id, dw_rank, upline_id, upline_rank, upline_sub_id, total_lot_rebate, same_lvl_rewards_prct, final_rewards, left_bal
+                                                                                     , quota, TimeNow, "personal", ori_dw, ori_dw_subsid, "bonus", "SameLevelRewards");
+                                                    left_bal = left_bal - left_bal;
+                                                    found_n_paid = true;
                                                 }
-                                            else if (quota < left_bal){
-                                                insert_update_based_rebate(upline_id, upline_rank, upline_sub_id, upline_meta_login, dw_id, dw_rank, dw_sub_id, subsid, meta_login, 
-                                                           time_close, trade_volume, upline_rebate_perlot, net_rebate_lot, final_amount, quota, quota, remarks);
-                                                
-                                                long bonus_wallet_id = 0;   double bonus_wallet_oldbal = 0; long e_wallet_id = 0;   double e_wallet_oldbal = 0;
-                                                retrieve_bonus_e_wallet_data( upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal ); 
-                                                double bonus_precent_decimal = (double)bonus_precent_given / 100; double rewards_precent_decimal = (double)rewards_precent_given / 100;
-
-                                                // rebate divide 80% and 20%
-                                                double rebate_major = Math.Round(quota * bonus_precent_decimal, 4); // Bonus Wallet
-                                                double rebate_minor = Math.Round(quota * rewards_precent_decimal, 4); // E-wallets
-                                                Console.WriteLine($"rebate: {quota} - bonus_precent_decimal: {bonus_precent_decimal} - rewards_precent_decimal: {rewards_precent_decimal}");
-
-                                                double new_bonus_wallet = bonus_wallet_oldbal + rebate_major; double new_e_wallet = e_wallet_oldbal + rebate_minor;
-                                                string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(quota,4)} * {bonus_precent_given}% = ${Math.Round(rebate_major,4)}";
-                                                string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(quota, 4) } * {rewards_precent_given}% = ${Math.Round(rebate_minor,4) }"; 
-                                                insert_to_wallet_walletlog_transaction(0, upline_id, upline_sub_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major );   
-                                                insert_to_wallet_walletlog_transaction(1, upline_id, upline_sub_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor,  remarks_minor );     
-                                                left_bal = left_bal - quota;
-                                                    //Console.WriteLine($" < left_bal : {left_bal}");
+                                                else if (quota < left_bal)
+                                                {
+                                                    insert_to_trade_same_level_reward(dw_id, dw_rank, upline_id, upline_rank, upline_sub_id, total_lot_rebate, same_lvl_rewards_prct, final_rewards, quota
+                                                                                     , quota, TimeNow, "personal", ori_dw, ori_dw_subsid, "bonus", "SameLevelRewards");
+                                                    left_bal = left_bal - quota;
+                                                    found_n_paid = true;
+                                                }
                                             }
-                                            }
-                                        } 
-                                        
-                                    Console.WriteLine($"");
-                                    insert_to_trade_same_level_reward(dw_id, dw_rank, upline_id, upline_rank, total_lot_rebate, same_lvl_rewards_prct, final_rewards, TimeNow, "personal", ori_dw, "bonus", "SameLevelRewards" ); 
-                                    
-                                    
-                                    } */
-                                    break;
+
+
+                                        }
+                                        if (found_n_paid == true)
+                                        {
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -859,10 +834,10 @@ namespace LuckyAnt
 
             List<object[]> same_level_list = new List<object[]>();
 
-            string sqlstr = $"SELECT t1.upline_user_id, t2.setting_rank_id, sum(t1.rebate), t3.rewards_same_lvl, t2.hierarchyList, t2.upline_id FROM trade_rebate_summaries t1 INNER JOIN users t2 ON t1.upline_user_id = t2.id and t2.deleted_at is null " +
+            string sqlstr = $"SELECT t1.upline_user_id, t1.upline_subs_id, t2.setting_rank_id, sum(t1.rebate), t3.rewards_same_lvl, t2.hierarchyList, t2.upline_id FROM trade_rebate_summaries t1 INNER JOIN users t2 ON t1.upline_user_id = t2.id and t2.deleted_at is null " +
                             $"INNER JOIN setting_ranks t3 ON t3.position = t2.setting_rank_id and t3.deleted_at is null where t1.deleted_at is null and t1.upline_user_id != t1.user_id and t3.rewards_same_lvl > 0 AND t1.rebate > 0 and t1.status = 'Approved' " +
                             $"and DATE(execute_at) = '{TimeNow.ToString("yyyy-MM-dd")}' AND t1.upline_user_id not in (SELECT distinct claimed_frm_user FROM trade_same_level_reward where DATE(rebate_claimed_time) = '{TimeNow.ToString("yyyy-MM-dd")}' and claim_type = 'network') " +
-                            $"group by t1.upline_user_id, t3.rewards_same_lvl ";
+                            $"group by t1.upline_user_id, t1.upline_subs_id, t3.rewards_same_lvl ";
 
             Console.WriteLine($"proceed_same_level_rewards sqlstr - {sqlstr}");
 
@@ -876,14 +851,15 @@ namespace LuckyAnt
                     MySqlDataReader reader = select_cmd.ExecuteReader();
                     while (reader.Read())
                     {
-                        //user id, setting_rank_id, total_rebate, rewards_slvl, hierarchy
+                        //user id, upline_subs_id, setting_rank_id, total_rebate, rewards_slvl, hierarchy
                         object[] rewardsData = {
                             reader.IsDBNull(0) ? (object)null : reader.GetInt64(0),
                             reader.IsDBNull(1) ? (object)null : reader.GetInt64(1),
-                            reader.IsDBNull(2) ? (object)null : reader.GetDouble(2),
+                            reader.IsDBNull(2) ? (object)null : reader.GetInt64(2),
                             reader.IsDBNull(3) ? (object)null : reader.GetDouble(3),
-                            reader.IsDBNull(4) ? (object)new String("") : reader.GetString(4),
-                            reader.IsDBNull(5) ? (object)Convert.ToInt64(0) : reader.GetInt64(5)
+                            reader.IsDBNull(4) ? (object)null : reader.GetDouble(4),
+                            reader.IsDBNull(5) ? (object)new String("") : reader.GetString(5),
+                            reader.IsDBNull(6) ? (object)Convert.ToInt64(0) : reader.GetInt64(6)
                         };
                         same_level_list.Add(rewardsData);
                     }
@@ -903,15 +879,16 @@ namespace LuckyAnt
                     Console.WriteLine($"group same_level: {string.Join(", ", s_lvl)}");
 
                     long dw_id = (long)s_lvl[0];
+                    long dw_subsid = (long)s_lvl[1];
                     long ori_dw = dw_id;
-                    long dw_rank = (long)s_lvl[1];
-                    double total_lot_rebate = (double)s_lvl[2];
-                    double same_lvl_rewards_prct = (double)s_lvl[3];
-                    double final_rewards = 0;
-                    string hierlist = (string)s_lvl[4];
+                    long ori_subs_id = dw_subsid;
+                    long dw_rank = (long)s_lvl[2];
+                    double total_lot_rebate = (double)s_lvl[3];
+                    double same_lvl_rewards_prct = (double)s_lvl[4];
+                    string hierlist = (string)s_lvl[5];
                     //long upline_id = (long)s_lvl[5];
 
-                    if( hierlist != null && hierlist.Length > 0 )
+                    if (hierlist != null && hierlist.Length > 0)
                     {
                         string[] hierlistSplit = hierlist.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
                         for (int x = hierlistSplit.Length - 1; x >= 0; x--)
@@ -919,8 +896,8 @@ namespace LuckyAnt
                             if (hierlistSplit[x] != "")
                             {
                                 long.TryParse(hierlistSplit[x], out long upline_id);
-                                long upline_rank = 0; long upline_active = 0; string upline_role="";
-                                final_rewards = 0;   
+                                long upline_rank = 0; long upline_active = 0; string upline_role = "";
+                                double final_rewards = 0;
                                 retrieve_userid(upline_id, ref upline_rank, ref upline_active, ref upline_role);
 
                                 if (upline_active > 0 && upline_rank > 0 && upline_rank == dw_rank) // && upline_rank == dw_rank && upline_rank == dw_rank
@@ -928,14 +905,47 @@ namespace LuckyAnt
                                     final_rewards = (total_lot_rebate * same_lvl_rewards_prct) / 100;
                                     if (final_rewards > 0)
                                     {
-                                        Console.WriteLine($"");
-                                        insert_to_trade_same_level_reward(dw_id, dw_rank, upline_id, upline_rank, total_lot_rebate, same_lvl_rewards_prct, final_rewards, TimeNow, "network", ori_dw, "bonus", "SameLevelRewards");
-                                        break;
+                                        List<object[]> subs_data_list = new List<object[]>();
+                                        retrieve_subscription_basedon_userid(upline_id, ref subs_data_list);
+
+                                        if (subs_data_list.Count > 0)
+                                        {
+                                            double left_bal = final_rewards;
+                                            bool found_n_paid = false;
+                                            foreach (var subs_data in subs_data_list)
+                                            {
+                                                long upline_meta_login = (long)subs_data[5];
+                                                long upline_sub_id = (long)subs_data[0];
+                                                double quota = (double)subs_data[3];
+                                                if (quota > 0 && left_bal > 0)
+                                                {
+                                                    if (quota > 0 && left_bal > 0 && quota >= left_bal)
+                                                    {
+                                                        insert_to_trade_same_level_reward(dw_id, dw_rank, upline_id, upline_rank, upline_sub_id, total_lot_rebate, same_lvl_rewards_prct, final_rewards, left_bal,
+                                                                                          quota, TimeNow, "personal", ori_dw, ori_subs_id, "bonus", "SameLevelRewards");
+                                                        left_bal = left_bal - left_bal;
+                                                        found_n_paid = true;
+                                                    }
+                                                    else if (quota < left_bal)
+                                                    {
+                                                        insert_to_trade_same_level_reward(dw_id, dw_rank, upline_id, upline_rank, upline_sub_id, total_lot_rebate, same_lvl_rewards_prct, final_rewards, quota,
+                                                                                          quota, TimeNow, "personal", ori_dw, ori_subs_id, "bonus", "SameLevelRewards");
+                                                        left_bal = left_bal - quota;
+                                                        found_n_paid = true;
+                                                    }
+                                                }
+                                            }
+                                            if (found_n_paid == true)
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        //insert_to_trade_same_level_reward(dw_id, dw_rank, upline_id, upline_rank, total_lot_rebate, same_lvl_rewards_prct, final_rewards, TimeNow, "network", ori_dw, "bonus", "SameLevelRewards");
                                     }
                                 }
                             }
                         }
-                    } 
+                    }
                 }
             }
             catch (Exception ex)
@@ -948,49 +958,26 @@ namespace LuckyAnt
             Console.WriteLine($"Task proceed_same_level_rewards_group completed in {taskStopwatch.Elapsed.TotalSeconds} seconds ({taskStopwatch.Elapsed.TotalMinutes})");
         }
 
-        private static void insert_to_trade_same_level_reward(long dw_id, long dw_rank, long upline_id, long upline_rank, double total_lot_rebate, double same_lvl_rewards_prct,
-                                                              double final_rewards, DateTime rebate_sum_dt, string type, long from_user, string category, string purpose)
+        private static void insert_to_trade_same_level_reward(long dw_id, long dw_rank, long upline_id, long upline_rank, long upline_subs_id, double total_lot_rebate, double same_lvl_rewards_prct,
+                                                              double final_rewards, double rewards_get, double subs_quota, DateTime rebate_sum_dt, string type, long from_user, long from_subs_id, string category, string purpose)
         {
-            long  bonus_wallet_id = 0;
-            double bonus_wallet_bal = 0;
-
-            long  e_wallet_id = 0;
-            double e_wallet_bal = 0;
-
             using (MySqlConnection sql_conn = new MySqlConnection(conn))
             {
                 sql_conn.Open(); // Open the connection
 
-                string sqlstr = $"INSERT INTO trade_same_level_reward( downline_id, downline_rank, upline_id, upline_rank, " +
-                                $"commission_amount, bonus_percentage, bonus_amount, is_claimed, claim_type, rebate_claimed_time, claimed_frm_user, created_at ) " +
-                                $"VALUES ({dw_id},{dw_rank},{upline_id},{upline_rank}, ROUND({total_lot_rebate},2), ROUND({same_lvl_rewards_prct},2), ROUND({final_rewards},2), " +
-                                $"'Approved', '{type}', '{rebate_sum_dt.ToString("yyyy-MM-dd")}', {from_user}, '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' );";
+                string sqlstr = $"INSERT INTO trade_same_level_reward( downline_id, downline_rank, upline_id, upline_rank, upline_subs_id, commission_amount, bonus_percentage, bonus_amount, final_rewards_get," +
+                                $"subs_quota, is_claimed, claim_type, claimed_frm_user, claimed_frm_subsid, rebate_claimed_time, created_at ) " +
+                                $"VALUES ({dw_id}, {dw_rank}, {upline_id}, {upline_rank}, {upline_subs_id}, ROUND({total_lot_rebate},4), ROUND({same_lvl_rewards_prct},4), ROUND({final_rewards},4), " +
+                                $"ROUND({rewards_get},4), ROUND({subs_quota},4), 'Approved', '{type}', {from_user}, {from_subs_id}, '{rebate_sum_dt.ToString("yyyy-MM-dd")}','{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' );";
 
                 Console.WriteLine($"insert_cmd sqlstr: {sqlstr}");
                 MySqlCommand insert_cmd = new MySqlCommand(sqlstr, sql_conn);
                 insert_cmd.ExecuteScalar();
 
-                // retrieve wallet balance
-                string bonus_wallet_sqlstr = $"select id, balance from wallets where deleted_at is null and type = 'bonus_wallet' and user_id = {upline_id};";
-                MySqlCommand bonus_wallet_cmd = new MySqlCommand(bonus_wallet_sqlstr, sql_conn);
-                MySqlDataReader result0 = bonus_wallet_cmd.ExecuteReader();
-                while (result0.Read())
-                {
-                    bonus_wallet_id = result0.GetInt64(0);
-                    bonus_wallet_bal = result0.GetDouble(1);
-                }
-                result0.Close();
+                long bonus_wallet_id = 0; double bonus_wallet_oldbal = 0;
+                long e_wallet_id = 0; double e_wallet_oldbal = 0;
 
-                string e_wallet_sqlstr = $"select id, balance from wallets where deleted_at is null and type = 'e_wallet' and user_id = {upline_id};";
-                Console.WriteLine($"e_wallet_sqlstr: {e_wallet_sqlstr}");
-                MySqlCommand e_wallet_cmd = new MySqlCommand(e_wallet_sqlstr, sql_conn);
-                MySqlDataReader result1 = e_wallet_cmd.ExecuteReader();
-                while (result1.Read())
-                {
-                    e_wallet_id = result1.GetInt64(0);
-                    e_wallet_bal = result1.GetDouble(1);
-                }
-                result1.Close();
+                retrieve_bonus_e_wallet_data(upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal);
 
                 double bonus_precent_decimal = (double)bonus_precent_given / 100;
                 double rewards_precent_decimal = (double)rewards_precent_given / 100;
@@ -999,65 +986,16 @@ namespace LuckyAnt
                 double rebate_major = Math.Round(final_rewards * bonus_precent_decimal, 2); // Bonus Wallet
                 double rebate_minor = Math.Round(final_rewards * rewards_precent_decimal, 2); // E-wallets
 
-                double new_bonus_wallet = bonus_wallet_bal + rebate_major;
-                double new_e_wallet = e_wallet_bal + rebate_minor;
+                double new_bonus_wallet = bonus_wallet_oldbal + rebate_major;
+                double new_e_wallet = e_wallet_oldbal + rebate_minor;
 
-                // --------------------------------------------------------------------- 80%
+                //Console.WriteLine($" "); // --------------------------------------------------------------------- 80%
                 string remarks_major = $"Same Lvl Rewards(bonus_wallet) => ${Math.Round(final_rewards, 2)} * {bonus_precent_given}% = ${rebate_major}";
-                string walletmajor_sqlstr = "INSERT INTO wallet_logs (user_id, wallet_id, old_balance, new_balance, wallet_type, category, purpose, amount, remark, created_at) " +
-                                            $"VALUES ({upline_id}, {bonus_wallet_id}, ROUND({bonus_wallet_bal},2), ROUND({new_bonus_wallet},2), 'bonus_wallet', '{category}', '{purpose}', " +
-                                            $"ROUND({rebate_major},2), '{remarks_major}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' );";
-                Console.WriteLine($"walletmajor_sqlstr: {walletmajor_sqlstr}");
-                MySqlCommand b_wallet_insert_cmd = new MySqlCommand(walletmajor_sqlstr, sql_conn);
-                b_wallet_insert_cmd.ExecuteScalar();
+                insert_to_wallet_walletlog_transaction(0, upline_id, upline_subs_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "SponsorBonus", rebate_major, remarks_major);
 
-                string walletmajor_update = $"update wallets set balance = balance + ROUND({rebate_major},2), updated_at = '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' " +
-                                            $"where deleted_at is null and user_id = {upline_id} and type = 'bonus_wallet' and id > 0; ";
-                Console.WriteLine($"walletmajor_update: {walletmajor_update}");
-                MySqlCommand b_wallet_update_cmd = new MySqlCommand(walletmajor_update, sql_conn);
-                b_wallet_update_cmd.ExecuteScalar();
-
-                string b_walletlog_id_str = $"SELECT id FROM wallet_logs where category = '{category}' and wallet_type = 'bonus_wallet' and purpose = '{purpose}' and new_balance = ROUND({new_bonus_wallet},2) " +
-                                         $"and user_id = {upline_id} and DATE(created_at) = DATE('{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}') order by created_at desc limit 1;";
-                Console.WriteLine($"b_walletlog_id_str: {b_walletlog_id_str}");
-                MySqlCommand b_select_cmd = new MySqlCommand(b_walletlog_id_str, sql_conn);
-                long b_walletlog_id = Convert.ToInt64(b_select_cmd.ExecuteScalar());
-
-                string major_b_transaction =  $"INSERT INTO transactions (user_id, category, transaction_type, fund_type, to_wallet_id, amount, transaction_amount, new_wallet_amount, status, comment, created_at)"+
-                                              $"VALUES ( {upline_id}, 'wallet', '{purpose}', 'RealFund', {bonus_wallet_id}, ROUND({rebate_major},2), ROUND({rebate_major},2), ROUND({new_bonus_wallet},2), " +
-                                              $"'Success', '{b_walletlog_id}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}'); ";
-                Console.WriteLine($"major_b_transaction: {major_b_transaction}");
-                MySqlCommand b_insert_transaction_cmd = new MySqlCommand(major_b_transaction, sql_conn);
-                b_insert_transaction_cmd.ExecuteScalar();
-                            
-                // --------------------------------------------------------------------- 20%
-
+                //Console.WriteLine($" "); // --------------------------------------------------------------------- 20%
                 string remarks_minor = $"Same Lvl Rewards(e_wallet) => ${Math.Round(final_rewards, 2)} * {rewards_precent_given}% = ${rebate_minor}";
-                string walletminor_sqlstr = "INSERT INTO wallet_logs (user_id, wallet_id, old_balance, new_balance, wallet_type, category, purpose, amount, remark, created_at) " +
-                                            $"VALUES ({upline_id}, {e_wallet_id}, ROUND({e_wallet_bal},2), ROUND({new_e_wallet},2), 'e_wallet', '{category}', '{purpose}', "+
-                                            $"ROUND({rebate_minor},2), '{remarks_minor}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' );";
-                Console.WriteLine($"walletminor_sqlstr: {walletminor_sqlstr}");
-                MySqlCommand e_wallet_insert_cmd = new MySqlCommand(walletminor_sqlstr, sql_conn);
-                e_wallet_insert_cmd.ExecuteScalar();
-
-                string walletminor_update = $"update wallets set balance = balance + ROUND({rebate_minor},2), updated_at = '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}' " +
-                                            $"where deleted_at is null and user_id = {upline_id} and type = 'e_wallet' and id > 0; ";
-                Console.WriteLine($"walletminor_update: {walletminor_update}");
-                MySqlCommand e_wallet_update_cmd = new MySqlCommand(walletminor_update, sql_conn);
-                e_wallet_update_cmd.ExecuteScalar();
-
-                string e_walletlog_id_str = $"SELECT id FROM wallet_logs where category = '{category}' and wallet_type = 'e_wallet' and purpose = '{purpose}' and new_balance = ROUND({new_e_wallet},2) " +
-                                         $"and user_id = {upline_id} and DATE(created_at) = DATE('{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}') order by created_at desc limit 1;";
-                Console.WriteLine($"e_walletlog_id_str: {e_walletlog_id_str}");
-                MySqlCommand e_select_cmd = new MySqlCommand(e_walletlog_id_str, sql_conn);
-                long e_walletlog_id = Convert.ToInt64(e_select_cmd.ExecuteScalar());
-
-                string minor_e_transaction =  $"INSERT INTO transactions (user_id, category, transaction_type, fund_type, to_wallet_id, amount, transaction_amount, new_wallet_amount, status, comment, created_at)"+
-                                              $"VALUES ({upline_id}, 'wallet', '{purpose}', 'RealFund', {e_wallet_id},  ROUND({rebate_minor},2), ROUND({rebate_minor},2), ROUND({new_e_wallet},2), " +
-                                              $"'Success', '{e_walletlog_id}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}'); ";
-                Console.WriteLine($"minor_e_transaction: {minor_e_transaction}");
-                MySqlCommand e_insert_transaction_cmd = new MySqlCommand(minor_e_transaction, sql_conn);
-                e_insert_transaction_cmd.ExecuteScalar();
+                insert_to_wallet_walletlog_transaction(1, upline_id, upline_subs_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "SponsorBonus", rebate_minor, remarks_minor);
             }
         }
 
@@ -1372,7 +1310,7 @@ namespace LuckyAnt
             List<object[]> userId_List = new List<object[]>();
             string user_sqlstr = $"SELECT id, setting_rank_id FROM users WHERE deleted_at is null and role='user' and status = 'Active' AND rank_up_status = 'auto' " +
                                  $"and (id = {lucky_ant_id} or top_leader_id = {lucky_ant_id}) ;";
-            
+
             Console.WriteLine($"user_sqlstr: {user_sqlstr}");
             using (MySqlConnection sql_conn = new MySqlConnection(conn))
             {
@@ -1556,8 +1494,8 @@ namespace LuckyAnt
             string user_sqlstr = $"SELECT id,setting_rank_id FROM users WHERE deleted_at is null and role='user' and status = 'Active' AND rank_up_status = 'manual' " +
                                  $"and (id = {lucky_ant_id} or top_leader_id = {lucky_ant_id}) ;";
             //$"and id not in (select id from ranking_logs where deleted_at is null and DATE(created_at) = DATE({currentD.ToString("yyyy-MM-dd")}))//; ";
-           
-            Console.WriteLine("user_sqlstr: "+user_sqlstr);
+
+            Console.WriteLine("user_sqlstr: " + user_sqlstr);
             using (MySqlConnection sql_conn = new MySqlConnection(conn))
             {
                 sql_conn.Open(); // Open the connection
@@ -1679,10 +1617,10 @@ namespace LuckyAnt
 
                                 proceed_userList.Add(userData);
                                 fulfill_userlist = $"{fulfill_userlist},{user_id}";
-                                
+
                                 Console.WriteLine($"U:{user_id}, R:{user_rank}, P->{personal_require}, {target_personal_require}, {package_req_rank}, DF->{direct_referral}, {target_direct_referral}, {dir_referral_rank}, G->{group_sales}, {target_group_sales}, {group_sales_rank}, NowR:{least_rank}");
                                 //Console.WriteLine($"U:{user_id}, R:{user_rank}, DF->{direct_referral}, {target_direct_referral}, {dir_referral_rank}, NowR:{least_rank}");
-                            } 
+                            }
                             //Console.WriteLine($"U:{user_id}, R:{user_rank}, P->{personal_require}, {target_personal_require}, {package_req_rank}, DF->{direct_referral}, {target_direct_referral}, {dir_referral_rank}, G->{group_sales}, {target_group_sales}, {group_sales_rank}, NowR:{least_rank}");
                         }
                     }
@@ -1714,7 +1652,7 @@ namespace LuckyAnt
                 //object[] cultivate_obj = new object[0];
                 string cultivate_sqlstr = "SELECT position, cultivate_ranktype, cultivate_member FROM setting_ranks where deleted_at is null and cultivate_type is not null and cultivate_member is not null " +
                                         "and cultivate_ranktype is not null order by position asc; ";
-    
+
                 MySqlCommand select_cmd = new MySqlCommand(cultivate_sqlstr, sql_conn);
                 MySqlDataReader reader = select_cmd.ExecuteReader();
                 while (reader.Read())
@@ -1894,8 +1832,8 @@ namespace LuckyAnt
                         {
                             long user_rank = (long)no_df_obj[1];
                             //user_rank = 1;
-                            Console.WriteLine($"min_rank_WOut_cultivate: {min_rank_WOut_cultivate} | user_rank: {user_rank}"); 
-                            
+                            Console.WriteLine($"min_rank_WOut_cultivate: {min_rank_WOut_cultivate} | user_rank: {user_rank}");
+
                             if (user_rank < min_rank_WOut_cultivate)
                             {
                                 no_df_obj[11] = min_rank_WOut_cultivate;
@@ -1918,7 +1856,7 @@ namespace LuckyAnt
                 string sqlstr = "select sub1.upline_id, sub1.upline_rank, sub1.upline_subs_id, sub1.downline_id, sub1.downline_rank, sub1.subs_id, sub1.meta_login, sub1.close_time, sub1.is_claimed, sub1.claimed_datetime, sum(sub1.trade_volume), sum(sub1.rebate_final_amt_get)  from " +
                                 "(select upline_id, upline_rank, upline_subs_id, downline_id, downline_rank, subs_id, meta_login,  DATE(time_close) as close_time, is_claimed, claimed_datetime, trade_volume, rebate_final_amt_get " +
                                 $"from trade_rebate_histories where deleted_at is null and is_claimed='Approved' and DATE(claimed_datetime) = '{TimeNow.ToString("yyyy-MM-dd")}') " +
-                                $" as sub1 where sub1.subs_id not in (select COALESCE(subs_id, 0) from trade_rebate_summaries where deleted_at is null and DATE(execute_at) = '{TimeNow.ToString("yyyy-MM-dd")}' ) "+ 
+                                $" as sub1 where sub1.subs_id not in (select COALESCE(subs_id, 0) from trade_rebate_summaries where deleted_at is null and DATE(execute_at) = '{TimeNow.ToString("yyyy-MM-dd")}' ) " +
                                 "group by sub1.upline_id, sub1.upline_rank, sub1.upline_subs_id, sub1.downline_id, sub1.downline_rank, sub1.subs_id, sub1.meta_login, sub1.close_time,sub1.claimed_datetime;";
 
                 Console.WriteLine($"proceed_summary_rebate - sqlstr: {sqlstr}");
@@ -1966,8 +1904,8 @@ namespace LuckyAnt
                         {
                             user_id = Convert.ToInt64(result1);
                         }
-                        if(user_id > 0)
-                        {    
+                        if (user_id > 0)
+                        {
                             string insert_sqlstr = $"INSERT INTO trade_rebate_summaries (upline_user_id, upline_rank, upline_subs_id, downline_id, downline_rank, subs_id, user_id, meta_login, closed_time, volume, rebate, status, execute_at, created_at ) VALUES " +
                                         $"({upline_id}, {upline_rank}, {upline_subsid}, {downline_id}, {downline_rank}, {subs_id}, {user_id}, {meta_login}, '{close_time.ToString("yyyy-MM-dd HH:mm:ss")}', ROUND({trade_volume},4), ROUND({rebate_amt},4), " +
                                         $"'Approved', '{claim_time.ToString("yyyy-MM-dd HH:mm:ss")}', '{DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}');";
@@ -2003,8 +1941,8 @@ namespace LuckyAnt
                     {
                         while (reader.Read())
                         {
-                            double cumulative_amount = (double) reader.GetDouble(0);
-                            double max_out_amount = (double) reader.GetDouble(1);
+                            double cumulative_amount = (double)reader.GetDouble(0);
+                            double max_out_amount = (double)reader.GetDouble(1);
                             quota = max_out_amount - cumulative_amount;
                         }
                     }
@@ -2053,7 +1991,7 @@ namespace LuckyAnt
                 double trade_pnl = (double)tradehist[5];
 
                 long user_rank = 0; string user_hierlist = "";
-                long user_active = 0; double rebate_perlot = 0; 
+                long user_active = 0; double rebate_perlot = 0;
 
                 Console.WriteLine("");
                 retrieve_rebateInfo_based_metalogin(meta_login, user_id, ref user_rank, ref user_active, ref user_hierlist, ref rebate_perlot);
@@ -2068,15 +2006,15 @@ namespace LuckyAnt
                     if (rebate_amount > 0 && subs_quota > 0)
                     {
                         // subscription_id, user_id, meta_login, volume, time_close, trade_profit 
-                        if(subs_quota <= rebate_amount)
+                        if (subs_quota <= rebate_amount)
                         {
-                            string remarks = $"[ {user_id}( R{user_rank}: {Math.Round(rebate_perlot,4)})] >> rebate owner ({Math.Round(rebate_perlot,4)} x {Math.Round(trade_volume,4)} = {Math.Round(rebate_amount,4)})";
-                            insert_update_based_rebate(user_id, user_rank, subscription_id, meta_login, user_id, user_rank, subscription_id, subscription_id, meta_login, 
+                            string remarks = $"[ {user_id}( R{user_rank}: {Math.Round(rebate_perlot, 4)})] >> rebate owner ({Math.Round(rebate_perlot, 4)} x {Math.Round(trade_volume, 4)} = {Math.Round(rebate_amount, 4)})";
+                            insert_update_based_rebate(user_id, user_rank, subscription_id, meta_login, user_id, user_rank, subscription_id, subscription_id, meta_login,
                                                     time_close, trade_volume, rebate_perlot, rebate_perlot, rebate_amount, subs_quota, subs_quota, remarks, 1);
-                            
-                            long bonus_wallet_id = 0;   double bonus_wallet_oldbal = 0;
-                            long e_wallet_id = 0;   double e_wallet_oldbal = 0;
-                            retrieve_bonus_e_wallet_data( user_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal ); 
+
+                            long bonus_wallet_id = 0; double bonus_wallet_oldbal = 0;
+                            long e_wallet_id = 0; double e_wallet_oldbal = 0;
+                            retrieve_bonus_e_wallet_data(user_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal);
                             double bonus_precent_decimal = (double)bonus_precent_given / 100; double rewards_precent_decimal = (double)rewards_precent_given / 100;
 
                             // rebate divide 80% and 20%
@@ -2085,20 +2023,20 @@ namespace LuckyAnt
                             Console.WriteLine($"rebate: {subs_quota} - bonus_precent_decimal: {bonus_precent_decimal} - rewards_precent_decimal: {rewards_precent_decimal}");
 
                             double new_bonus_wallet = bonus_wallet_oldbal + rebate_major; double new_e_wallet = e_wallet_oldbal + rebate_minor;
-                            string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(subs_quota,4)} * {bonus_precent_given}% = ${Math.Round(rebate_major,4)}";
-                            string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(subs_quota, 4) } * {rewards_precent_given}% = ${Math.Round(rebate_minor,4) }"; 
-                            insert_to_wallet_walletlog_transaction(0, user_id, subscription_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major );   
-                            insert_to_wallet_walletlog_transaction(1, user_id, subscription_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor,  remarks_minor );     
-                        }    
+                            string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(subs_quota, 4)} * {bonus_precent_given}% = ${Math.Round(rebate_major, 4)}";
+                            string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(subs_quota, 4)} * {rewards_precent_given}% = ${Math.Round(rebate_minor, 4)}";
+                            insert_to_wallet_walletlog_transaction(0, user_id, subscription_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major);
+                            insert_to_wallet_walletlog_transaction(1, user_id, subscription_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor, remarks_minor);
+                        }
                         else
                         {
-                            string remarks = $"[ {user_id}( R{user_rank}: {Math.Round(rebate_perlot,4)})] >> rebate owner ({Math.Round(rebate_perlot,4)} x {Math.Round(trade_volume,4)} = {Math.Round(rebate_amount,4)})";
-                            insert_update_based_rebate(user_id, user_rank, subscription_id, meta_login, user_id, user_rank, subscription_id, subscription_id, meta_login, 
+                            string remarks = $"[ {user_id}( R{user_rank}: {Math.Round(rebate_perlot, 4)})] >> rebate owner ({Math.Round(rebate_perlot, 4)} x {Math.Round(trade_volume, 4)} = {Math.Round(rebate_amount, 4)})";
+                            insert_update_based_rebate(user_id, user_rank, subscription_id, meta_login, user_id, user_rank, subscription_id, subscription_id, meta_login,
                                                     time_close, trade_volume, rebate_perlot, rebate_perlot, rebate_amount, subs_quota, rebate_amount, remarks, 1);
-                            
-                            long bonus_wallet_id = 0;   double bonus_wallet_oldbal = 0;
-                            long e_wallet_id = 0;   double e_wallet_oldbal = 0;
-                            retrieve_bonus_e_wallet_data( user_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal ); 
+
+                            long bonus_wallet_id = 0; double bonus_wallet_oldbal = 0;
+                            long e_wallet_id = 0; double e_wallet_oldbal = 0;
+                            retrieve_bonus_e_wallet_data(user_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal);
                             double bonus_precent_decimal = (double)bonus_precent_given / 100; double rewards_precent_decimal = (double)rewards_precent_given / 100;
 
                             // rebate divide 80% and 20%
@@ -2107,16 +2045,16 @@ namespace LuckyAnt
                             Console.WriteLine($"rebate: {rebate_amount} - bonus_precent_decimal: {bonus_precent_decimal} - rewards_precent_decimal: {rewards_precent_decimal}");
 
                             double new_bonus_wallet = bonus_wallet_oldbal + rebate_major; double new_e_wallet = e_wallet_oldbal + rebate_minor;
-                            string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(rebate_amount,4)} * {bonus_precent_given}% = ${Math.Round(rebate_major,4)}";
-                            string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(rebate_amount, 4) } * {rewards_precent_given}% = ${Math.Round(rebate_minor,4) }"; 
-                            insert_to_wallet_walletlog_transaction(0, user_id, subscription_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major );   
-                            insert_to_wallet_walletlog_transaction(1, user_id, subscription_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor,  remarks_minor );  
+                            string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(rebate_amount, 4)} * {bonus_precent_given}% = ${Math.Round(rebate_major, 4)}";
+                            string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(rebate_amount, 4)} * {rewards_precent_given}% = ${Math.Round(rebate_minor, 4)}";
+                            insert_to_wallet_walletlog_transaction(0, user_id, subscription_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major);
+                            insert_to_wallet_walletlog_transaction(1, user_id, subscription_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor, remarks_minor);
                         }
                         override_to_uplines(user_id, user_rank, user_hierlist, subscription_id, meta_login, time_close, trade_volume, rebate_perlot);
                     }
                     else
                     {
-                        if(subs_quota <= 0){   rebate_perlot = 0;  }
+                        if (subs_quota <= 0) { rebate_perlot = 0; }
                         update_status_based_rebate(subscription_id);
                         override_to_uplines(user_id, user_rank, user_hierlist, subscription_id, meta_login, time_close, trade_volume, rebate_perlot);
                     }
@@ -2129,7 +2067,7 @@ namespace LuckyAnt
             Console.WriteLine($"Task proceed_rebate_calculation completed in {taskStopwatch.Elapsed.TotalSeconds} seconds ({taskStopwatch.Elapsed.TotalMinutes})");
         }
 
-        private static void override_to_uplines(long downline_userid, long downline_rank, string hierlist, long downline_sub_id, long downline_meta_login, 
+        private static void override_to_uplines(long downline_userid, long downline_rank, string hierlist, long downline_sub_id, long downline_meta_login,
                                                 DateTime time_close, double trade_volume, double rebate_byrank)
         {
             if (hierlist != null && hierlist.Length > 0)
@@ -2161,37 +2099,38 @@ namespace LuckyAnt
                         {
                             double net_rebate_lot = upline_rebate_perlot - dw_rebate_perlot;
                             double final_amount = net_rebate_lot * trade_volume;
-                            string remarks = $"[ {upline_id} ( R{upline_rank}: {Math.Round(upline_rebate_perlot,4)})] - {remark_hierlist} = {Math.Round(net_rebate_lot,4)} x {Math.Round(trade_volume,4)} >> {Math.Round(final_amount,4)}";
-                            
+                            string remarks = $"[ {upline_id} ( R{upline_rank}: {Math.Round(upline_rebate_perlot, 4)})] - {remark_hierlist} = {Math.Round(net_rebate_lot, 4)} x {Math.Round(trade_volume, 4)} >> {Math.Round(final_amount, 4)}";
+
                             if (net_rebate_lot > 0)
                             {
                                 List<object[]> subs_data_list = new List<object[]>();
                                 retrieve_subscription_basedon_userid(upline_id, ref subs_data_list);
-                                
-                                Console.WriteLine($"Subs Count: {subs_data_list.Count }");
+
+                                Console.WriteLine($"Subs Count: {subs_data_list.Count}");
 
                                 long upline_meta_login = 0;
                                 long upline_sub_id = 0;
 
-                                if(subs_data_list.Count > 0)
+                                if (subs_data_list.Count > 0)
                                 {
-                                    double left_bal = final_amount ;
+                                    double left_bal = final_amount;
 
                                     foreach (var subs_data in subs_data_list)
                                     {
-                                        upline_meta_login = (long) subs_data[5];
-                                        upline_sub_id = (long) subs_data[0];
+                                        upline_meta_login = (long)subs_data[5];
+                                        upline_sub_id = (long)subs_data[0];
                                         double quota = (double)subs_data[3];
-                                        
-                                        if(quota > 0 &&  left_bal > 0)
+
+                                        if (quota > 0 && left_bal > 0)
                                         {
-                                            if(quota >= left_bal) {  
-                                                insert_update_based_rebate(upline_id, upline_rank, upline_sub_id, upline_meta_login, dw_id, dw_rank, dw_sub_id, subsid, meta_login, 
+                                            if (quota >= left_bal)
+                                            {
+                                                insert_update_based_rebate(upline_id, upline_rank, upline_sub_id, upline_meta_login, dw_id, dw_rank, dw_sub_id, subsid, meta_login,
                                                            time_close, trade_volume, upline_rebate_perlot, net_rebate_lot, final_amount, quota, left_bal, remarks);
 
 
-                                                long bonus_wallet_id = 0;   double bonus_wallet_oldbal = 0; long e_wallet_id = 0;   double e_wallet_oldbal = 0;
-                                                retrieve_bonus_e_wallet_data( upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal ); 
+                                                long bonus_wallet_id = 0; double bonus_wallet_oldbal = 0; long e_wallet_id = 0; double e_wallet_oldbal = 0;
+                                                retrieve_bonus_e_wallet_data(upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal);
                                                 double bonus_precent_decimal = (double)bonus_precent_given / 100; double rewards_precent_decimal = (double)rewards_precent_given / 100;
 
                                                 // rebate divide 80% and 20%
@@ -2200,22 +2139,23 @@ namespace LuckyAnt
                                                 Console.WriteLine($"rebate: {left_bal} - bonus_precent_decimal: {bonus_precent_decimal} - rewards_precent_decimal: {rewards_precent_decimal}");
 
                                                 double new_bonus_wallet = bonus_wallet_oldbal + rebate_major; double new_e_wallet = e_wallet_oldbal + rebate_minor;
-                                                string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(left_bal,4)} * {bonus_precent_given}% = ${Math.Round(rebate_major,4)}";
-                                                string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(left_bal, 4) } * {rewards_precent_given}% = ${Math.Round(rebate_minor,4) }"; 
-                                                insert_to_wallet_walletlog_transaction(0, upline_id, upline_sub_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major );   
-                                                insert_to_wallet_walletlog_transaction(1, upline_id, upline_sub_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor,  remarks_minor );     
+                                                string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(left_bal, 4)} * {bonus_precent_given}% = ${Math.Round(rebate_major, 4)}";
+                                                string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(left_bal, 4)} * {rewards_precent_given}% = ${Math.Round(rebate_minor, 4)}";
+                                                insert_to_wallet_walletlog_transaction(0, upline_id, upline_sub_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major);
+                                                insert_to_wallet_walletlog_transaction(1, upline_id, upline_sub_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor, remarks_minor);
 
                                                 left_bal = left_bal - net_rebate_lot;
 
-                                                
+
                                                 //Console.WriteLine($" >= left_bal : {left_bal}");
                                             }
-                                            else if (quota < left_bal){
-                                                insert_update_based_rebate(upline_id, upline_rank, upline_sub_id, upline_meta_login, dw_id, dw_rank, dw_sub_id, subsid, meta_login, 
+                                            else if (quota < left_bal)
+                                            {
+                                                insert_update_based_rebate(upline_id, upline_rank, upline_sub_id, upline_meta_login, dw_id, dw_rank, dw_sub_id, subsid, meta_login,
                                                            time_close, trade_volume, upline_rebate_perlot, net_rebate_lot, final_amount, quota, quota, remarks);
-                                                
-                                                long bonus_wallet_id = 0;   double bonus_wallet_oldbal = 0; long e_wallet_id = 0;   double e_wallet_oldbal = 0;
-                                                retrieve_bonus_e_wallet_data( upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal ); 
+
+                                                long bonus_wallet_id = 0; double bonus_wallet_oldbal = 0; long e_wallet_id = 0; double e_wallet_oldbal = 0;
+                                                retrieve_bonus_e_wallet_data(upline_id, ref bonus_wallet_id, ref bonus_wallet_oldbal, ref e_wallet_id, ref e_wallet_oldbal);
                                                 double bonus_precent_decimal = (double)bonus_precent_given / 100; double rewards_precent_decimal = (double)rewards_precent_given / 100;
 
                                                 // rebate divide 80% and 20%
@@ -2224,12 +2164,12 @@ namespace LuckyAnt
                                                 Console.WriteLine($"rebate: {quota} - bonus_precent_decimal: {bonus_precent_decimal} - rewards_precent_decimal: {rewards_precent_decimal}");
 
                                                 double new_bonus_wallet = bonus_wallet_oldbal + rebate_major; double new_e_wallet = e_wallet_oldbal + rebate_minor;
-                                                string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(quota,4)} * {bonus_precent_given}% = ${Math.Round(rebate_major,4)}";
-                                                string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(quota, 4) } * {rewards_precent_given}% = ${Math.Round(rebate_minor,4) }"; 
-                                                insert_to_wallet_walletlog_transaction(0, upline_id, upline_sub_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major );   
-                                                insert_to_wallet_walletlog_transaction(1, upline_id, upline_sub_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor,  remarks_minor );     
+                                                string remarks_major = $"LotSize Rebate (bonus_wallet) => ${Math.Round(quota, 4)} * {bonus_precent_given}% = ${Math.Round(rebate_major, 4)}";
+                                                string remarks_minor = $"LotSize Rebate (e_wallet) => ${Math.Round(quota, 4)} * {rewards_precent_given}% = ${Math.Round(rebate_minor, 4)}";
+                                                insert_to_wallet_walletlog_transaction(0, upline_id, upline_sub_id, bonus_wallet_id, bonus_wallet_oldbal, new_bonus_wallet, "bonus", "LotSizeRebate", rebate_major, remarks_major);
+                                                insert_to_wallet_walletlog_transaction(1, upline_id, upline_sub_id, e_wallet_id, e_wallet_oldbal, new_e_wallet, "bonus", "LotSizeRebate", rebate_minor, remarks_minor);
                                                 left_bal = left_bal - quota;
-                                                    //Console.WriteLine($" < left_bal : {left_bal}");
+                                                //Console.WriteLine($" < left_bal : {left_bal}");
                                             }
                                         }
                                     }
@@ -2261,9 +2201,9 @@ namespace LuckyAnt
             }
         }
 
-        private static void insert_update_based_rebate(long upline_userid, long upline_rank, long upline_sub_id, long upline_meta_login, 
-                                                       long downline_userid, long downline_rank, long downline_sub_id, long sub_id, long meta_login, 
-                                                       DateTime time_close, double trade_volume, double rebate_byrank, double net_rebate, double total_rebate, 
+        private static void insert_update_based_rebate(long upline_userid, long upline_rank, long upline_sub_id, long upline_meta_login,
+                                                       long downline_userid, long downline_rank, long downline_sub_id, long sub_id, long meta_login,
+                                                       DateTime time_close, double trade_volume, double rebate_byrank, double net_rebate, double total_rebate,
                                                        double subs_quota, double rebate_final_amt, string remarks, long update_flag = 0)
         {
             try
@@ -2290,7 +2230,7 @@ namespace LuckyAnt
                     }
                 }
             }
-            catch (Exception ex)    {   Console.WriteLine($"An exception occurred: {ex}");  }
+            catch (Exception ex) { Console.WriteLine($"An exception occurred: {ex}"); }
         }
 
         private static void retrieve_userid(long user_id, ref long user_rank, ref long user_active, ref string user_role)
@@ -2359,7 +2299,7 @@ namespace LuckyAnt
                 Console.WriteLine($"An exception occurred: {ex}");
             }
         }
-        
+
         private static void retrieve_rebateInfo_based_metalogin(long login, long user_id, ref long user_rank, ref long user_active, ref string user_hierlist, ref double rebate_perlot)
         {
             try
@@ -2390,11 +2330,11 @@ namespace LuckyAnt
                         //Console.WriteLine($"user_rank sqlstr: {sqlstr}"); 
                         MySqlCommand select_cmd = new MySqlCommand(sqlstr, sql_conn);
                         object result1 = select_cmd.ExecuteScalar();
-                        if (result1 != null) {  rebate_perlot = Convert.ToDouble(result1);  }
+                        if (result1 != null) { rebate_perlot = Convert.ToDouble(result1); }
                     }
                 }
             }
-            catch (Exception ex)    {   Console.WriteLine($"An exception occurred: {ex}");  }
+            catch (Exception ex) { Console.WriteLine($"An exception occurred: {ex}"); }
         }
 
         private static List<ulong> get_trading_accounts()
